@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://github.com/ishinder/eastr-cpp/archive/v{{ version }}.tar.gz
-  sha256: PLACEHOLDER_UPDATE_WITH_ACTUAL_SHA256
+  sha256: 802c44ef696b62a304d0b3d4aef20c370991be85b7a646454023dba0ae00745c
 
 build:
   number: 0
