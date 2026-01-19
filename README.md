@@ -1,4 +1,4 @@
-# EASTR
+<h1 align="center">EASTR</h1>
 
 <p align="center">
 (\(\<br>
