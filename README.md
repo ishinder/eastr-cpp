@@ -81,8 +81,11 @@ eastr --bam samples.txt \
 ```bash
 eastr --gtf annotation.gtf \
       -r genome.fa \
+      -i /path/to/bt2_index \
       --out_removed_junctions spurious_junctions.bed
 ```
+
+> **Note:** The `-i` (bowtie2 index) flag is optional. If omitted, EASTR will automatically build an index from the reference FASTA, which adds a few minutes for large genomes. Providing a pre-built index speeds up repeated runs.
 
 ### Save removed alignments for inspection
 
