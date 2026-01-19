@@ -1,0 +1,191 @@
+# =============================================================================
+# EASTR C++ .gitignore
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Project-specific directories
+# -----------------------------------------------------------------------------
+docs/
+
+# -----------------------------------------------------------------------------
+# Test data - keep references and indices, ignore large generated files
+# -----------------------------------------------------------------------------
+test_data/alignments/
+test_data/fastq/
+test_data/comparison/
+
+# Local-only test data (not tracked in git)
+test_data/local/
+
+# Uncompressed reference files (use .gz versions)
+test_data/reference/*.fa
+test_data/reference/*.gtf
+test_data/reference/*.fa.fai
+
+# Generated bowtie2 indices in reference dir (use indices/bowtie2 instead)
+test_data/reference/*.bt2
+
+# -----------------------------------------------------------------------------
+# Build directories and artifacts
+# -----------------------------------------------------------------------------
+build/
+out/
+cmake-build-*/
+_deps/
+
+# -----------------------------------------------------------------------------
+# CMake generated files
+# -----------------------------------------------------------------------------
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+Makefile
+CPackConfig.cmake
+CPackSourceConfig.cmake
+CTestTestfile.cmake
+DartConfiguration.tcl
+Testing/
+
+# Ninja build system
+.ninja_deps
+.ninja_log
+
+# -----------------------------------------------------------------------------
+# Compiled objects and libraries
+# -----------------------------------------------------------------------------
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.so.*
+*.dylib
+*.dll
+*.exe
+
+# Debug symbols
+*.dSYM/
+*.pdb
+
+# Core dumps
+core
+core.*
+vgcore.*
+
+# -----------------------------------------------------------------------------
+# Project binaries (if built outside build/)
+# -----------------------------------------------------------------------------
+/eastr
+src/eastr/junction_extractor
+src/eastr/vacuum
+
+# -----------------------------------------------------------------------------
+# IDE and editor files
+# -----------------------------------------------------------------------------
+# Visual Studio Code
+.vscode/
+
+# JetBrains IDEs (CLion, etc.)
+.idea/
+*.iml
+
+# Vim/Neovim
+*.swp
+*.swo
+*~
+Session.vim
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+.#*
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# Kate
+*.kate-swp
+
+# -----------------------------------------------------------------------------
+# Language server and tooling caches
+# -----------------------------------------------------------------------------
+.cache/
+.clangd/
+.ccls-cache/
+compile_flags.txt
+
+# Tags
+tags
+TAGS
+.tags
+
+# -----------------------------------------------------------------------------
+# Code coverage
+# -----------------------------------------------------------------------------
+*.gcov
+*.gcda
+*.gcno
+coverage/
+lcov.info
+*.info
+
+# -----------------------------------------------------------------------------
+# Python (for any Python scripts/tools)
+# -----------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+*.egg-info/
+.eggs/
+venv/
+.venv/
+
+# -----------------------------------------------------------------------------
+# Claude Code / AI assistance
+# -----------------------------------------------------------------------------
+*claude*.md
+.claude/
+
+# -----------------------------------------------------------------------------
+# OS generated files
+# -----------------------------------------------------------------------------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+.directory
+
+# -----------------------------------------------------------------------------
+# Temporary and log files
+# -----------------------------------------------------------------------------
+tmp/
+tmp*
+*.tmp
+*.temp
+*.log
+*.bak
+*.backup
+
+# -----------------------------------------------------------------------------
+# Environment and secrets (never commit these)
+# -----------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.*
+secrets.*

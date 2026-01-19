@@ -1,0 +1,3 @@
+test_data/chr4_subset/SRR14056780_chr4.bam
+test_data/chr4_subset/SRR14056781_chr4.bam
+test_data/chr4_subset/SRR14056782_chr4.bam

@@ -1,0 +1,10 @@
+# Bowtie2 indices
+test_data/indices/bowtie2/*.bt2 filter=lfs diff=lfs merge=lfs -text
+
+# Reference files (compressed only)
+test_data/reference/*.fa.gz filter=lfs diff=lfs merge=lfs -text
+test_data/reference/*.gtf.gz filter=lfs diff=lfs merge=lfs -text
+
+# Test BAM files and indices
+test_data/chr4_subset/*.bam filter=lfs diff=lfs merge=lfs -text
+test_data/chr4_subset/*.bam.bai filter=lfs diff=lfs merge=lfs -text
