@@ -23,6 +23,8 @@ o('')('')<br>
 
 EASTR is a tool for detecting and eliminating spuriously spliced alignments in RNA-seq datasets. It improves the accuracy of transcriptome assembly by identifying and removing misaligned spliced alignments. The tool can process GTF, BED, and BAM files as input and can be applied to any RNA-seq dataset regardless of the alignment software used.
 
+This is a C++ reimplementation of the [original EASTR](https://github.com/ishinder/EASTR), providing ~10x faster performance with identical results.
+
 ## Installation
 
 ### Conda (recommended)
