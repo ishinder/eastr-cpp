@@ -92,7 +92,20 @@ if(EXISTS ${MINIMAP2_DIR})
     )
     add_library(minimap2 STATIC ${MINIMAP2_SOURCES})
     target_include_directories(minimap2 PUBLIC ${MINIMAP2_DIR})
-    target_compile_options(minimap2 PRIVATE -msse4.1 -DHAVE_KALLOC)
+    target_compile_definitions(minimap2 PRIVATE HAVE_KALLOC)
+
+    # Architecture-specific SIMD flags
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm|aarch64|ARM64")
+        # ARM: use sse2neon header-only library to translate SSE to NEON
+        target_include_directories(minimap2 PRIVATE ${MINIMAP2_DIR}/sse2neon)
+        target_compile_definitions(minimap2 PRIVATE __SSE2__)
+        message(STATUS "Building minimap2 for ARM with sse2neon")
+    else()
+        # x86: use native SSE4.1
+        target_compile_options(minimap2 PRIVATE -msse4.1)
+        message(STATUS "Building minimap2 for x86 with SSE4.1")
+    endif()
+
     target_link_libraries(minimap2 PUBLIC ZLIB::ZLIB pthread)
     set(MINIMAP2_FOUND TRUE)
 else()
