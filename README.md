@@ -189,6 +189,14 @@ eastr --bam input.bam \
 
 For human RNA-seq data, we recommend using a bowtie2 index with **pseudoautosomal regions (PARs) masked** on chrY. The PAR regions are nearly identical between chrX and chrY, causing multi-mapping artifacts that can affect EASTR's spurious junction detection.
 
+**Option 1: Download pre-built index** (recommended)
+
+A pre-built PAR-masked hg38 bowtie2 index is available on Zenodo:
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18463283.svg)](https://doi.org/10.5281/zenodo.18463283)
+
+**Option 2: Build your own**
+
 ```bash
 # Build a PAR-masked hg38 bowtie2 index
 ./scripts/build_hg38_noPARs_index.sh /path/to/output 8
