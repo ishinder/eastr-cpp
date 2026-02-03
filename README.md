@@ -185,6 +185,17 @@ eastr --bam input.bam \
 - **Reference FASTA** can be uncompressed or bgzip-compressed (`.fa`, `.fa.gz`, `.fasta`, `.fasta.gz`)
 - **GTF/BED files** can be plain text or gzipped
 
+### Human genome: PAR masking recommended
+
+For human RNA-seq data, we recommend using a bowtie2 index with **pseudoautosomal regions (PARs) masked** on chrY. The PAR regions are nearly identical between chrX and chrY, causing multi-mapping artifacts that can affect EASTR's spurious junction detection.
+
+```bash
+# Build a PAR-masked hg38 bowtie2 index
+./scripts/build_hg38_noPARs_index.sh /path/to/output 8
+```
+
+This masks PAR1 (chrY:10,001-2,781,479) and PAR2 (chrY:56,887,903-57,217,415) with N's before building the index.
+
 ## Citation
 
 If you use EASTR in your research, please cite:
