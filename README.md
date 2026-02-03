@@ -194,7 +194,7 @@ For human RNA-seq data, we recommend using a bowtie2 index with **pseudoautosoma
 ./scripts/build_hg38_noPARs_index.sh /path/to/output 8
 ```
 
-This masks PAR1 (chrY:10,001-2,781,479) and PAR2 (chrY:56,887,903-57,217,415) with N's before building the index.
+This masks the hg38/GRCh38 PAR coordinates—PAR1 (chrY:10,001-2,781,479) and PAR2 (chrY:56,887,903-57,217,415)—with N's before building the index.
 
 ## Citation
 

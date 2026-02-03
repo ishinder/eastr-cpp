@@ -3,12 +3,16 @@ set -euo pipefail
 
 # Build hg38 bowtie2 index with pseudoautosomal regions (PARs) masked
 #
-# The PAR regions on chrY are identical to chrX, causing multi-mapping issues
-# in RNA-seq analysis. This script masks them with N's before building the index.
+# The PAR regions on chrY are nearly identical to chrX, causing multi-mapping
+# issues in RNA-seq analysis. This script masks them with N's before building
+# the index.
 #
-# PAR coordinates (GRCh38/hg38):
+# PAR coordinates for GRCh38/hg38 (from UCSC Genome Browser):
 #   PAR1: chrY:10,001-2,781,479
 #   PAR2: chrY:56,887,903-57,217,415
+#
+# Note: These coordinates are specific to hg38. For other genome builds
+# (e.g., hg19, T2T-CHM13), use the appropriate PAR coordinates.
 #
 # Usage: ./build_hg38_noPARs_index.sh [output_dir] [threads]
 #
