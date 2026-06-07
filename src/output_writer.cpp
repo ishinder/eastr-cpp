@@ -1,4 +1,5 @@
 #include "eastr/output_writer.hpp"
+#include "eastr/path_utils.hpp"
 
 #include <algorithm>
 #include <fstream>
@@ -201,39 +202,18 @@ std::vector<std::string> OutputWriter::generate_junction_output_paths(
 
     std::vector<std::string> output_paths;
 
-    auto get_basename = [](const std::string& path) {
-        size_t last_slash = path.find_last_of("/\\");
-        size_t last_dot = path.find_last_of('.');
-        if (last_slash == std::string::npos) last_slash = 0;
-        else last_slash++;
-        if (last_dot == std::string::npos || last_dot < last_slash) {
-            return path.substr(last_slash);
-        }
-        return path.substr(last_slash, last_dot - last_slash);
-    };
-
-    auto get_parent_dir = [](const std::string& path) {
-        size_t last_slash = path.find_last_of("/\\");
-        if (last_slash == std::string::npos) {
-            return std::string(".");
-        }
-        return path.substr(0, last_slash);
-    };
-
-    // Check if output is a file or directory
-    bool is_file = output_dir_or_file.find('.') != std::string::npos &&
-                   output_dir_or_file.find_last_of('.') > output_dir_or_file.find_last_of("/\\");
+    // Check if output is a file or directory (shared, npos-safe heuristic).
+    bool is_file = is_file_path(output_dir_or_file);
 
     if (input_files.size() == 1 && is_file) {
         output_paths.push_back(output_dir_or_file);
     } else {
         // Determine the output directory
         // If output looks like a file but we have multiple inputs, use parent directory
-        std::string out_dir = is_file ? get_parent_dir(output_dir_or_file) : output_dir_or_file;
+        std::string out_dir = is_file ? path_parent_dir(output_dir_or_file) : output_dir_or_file;
 
         for (const auto& input : input_files) {
-            std::string basename = get_basename(input);
-            output_paths.push_back(out_dir + "/" + basename + suffix + ".bed");
+            output_paths.push_back(out_dir + "/" + path_basename(input) + suffix + ".bed");
         }
     }
 
@@ -247,26 +227,17 @@ std::vector<std::string> OutputWriter::generate_bam_output_paths(
 
     std::vector<std::string> output_paths;
 
-    auto get_basename = [](const std::string& path) {
-        size_t last_slash = path.find_last_of("/\\");
-        size_t last_dot = path.find_last_of('.');
-        if (last_slash == std::string::npos) last_slash = 0;
-        else last_slash++;
-        if (last_dot == std::string::npos || last_dot < last_slash) {
-            return path.substr(last_slash);
-        }
-        return path.substr(last_slash, last_dot - last_slash);
-    };
-
-    bool is_file = output_dir_or_file.find('.') != std::string::npos &&
-                   output_dir_or_file.find_last_of('.') > output_dir_or_file.find_last_of("/\\");
+    // Check if output is a file or directory (shared, npos-safe heuristic).
+    bool is_file = is_file_path(output_dir_or_file);
 
     if (input_bams.size() == 1 && is_file) {
         output_paths.push_back(output_dir_or_file);
     } else {
+        // If output looks like a file but we have multiple inputs, use parent directory
+        std::string out_dir = is_file ? path_parent_dir(output_dir_or_file) : output_dir_or_file;
+
         for (const auto& input : input_bams) {
-            std::string basename = get_basename(input);
-            output_paths.push_back(output_dir_or_file + "/" + basename + suffix + ".bam");
+            output_paths.push_back(out_dir + "/" + path_basename(input) + suffix + ".bam");
         }
     }
 

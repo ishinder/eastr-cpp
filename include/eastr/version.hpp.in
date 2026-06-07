@@ -1,0 +1,8 @@
+#pragma once
+
+namespace eastr {
+
+// Single source of truth: configured from the CMake project() VERSION.
+inline constexpr const char* kVersion = "@PROJECT_VERSION@";
+
+} // namespace eastr

@@ -131,8 +131,13 @@ eastr --bam input.bam \
 |--------|-------------|
 | `--bam FILE` | BAM file, or text file listing BAM paths (one per line) |
 | `--gtf FILE` | GTF annotation file |
-| `--bed FILE` | BED file with junction coordinates |
+| `--bed FILE` | BED file with junction coordinates, or text file listing BED paths |
 | `-r, --reference FILE` | Reference genome FASTA (required for all input types) |
+
+> Input type is detected by file **content**, not by extension, so any filename
+> works (including Galaxy's `*.dat` datasets). A `--bam`/`--bed` argument that is a
+> plain-text list of paths is still accepted, but the explicit `--bam_list` /
+> `--bed_list` flags are preferred (see below).
 
 ### Common options
 
@@ -140,8 +145,9 @@ eastr --bam input.bam \
 |--------|---------|-------------|
 | `-i, --bowtie2_index PATH` | auto-built | Bowtie2 index prefix (built automatically if not provided) |
 | `-p INT` | 1 | Number of threads |
-| `--out_filtered_bam PATH` | — | Output filtered BAM file or directory |
-| `--out_removed_junctions PATH` | stdout | Output spurious junctions (BED format) |
+| `--out_filtered_bam PATH` | — | Output filtered BAM. **File** for a single BAM input; **directory** for a BAM list (writes `<sample><suffix>.bam` per input) |
+| `--out_removed_junctions FILE` | stdout | Output spurious junctions (BED format) |
+| `--version` | — | Print the version and exit |
 | `--verbose` | off | Show progress information |
 
 <details>
@@ -168,14 +174,25 @@ eastr --bam input.bam \
 | `-w INT` | 2 | Minimizer window size |
 | `-m INT` | 25 | Minimum chain score |
 
-### Additional output options
+### Input list options
 
 | Option | Description |
 |--------|-------------|
-| `--out_original_junctions PATH` | Write all junctions before filtering |
-| `--out_kept_junctions PATH` | Write non-spurious junctions |
-| `--removed_alignments_bam` | Write removed alignments to separate BAM |
-| `--filtered_bam_suffix STR` | Suffix for output BAMs (default: `_EASTR_filtered`) |
+| `--bam_list` | Treat the `--bam` argument as a text file listing BAM paths (one per line) |
+| `--bed_list` | Treat the `--bed` argument as a text file listing BED paths (one per line) |
+
+### Additional output options
+
+All `--out_*_junctions` options take a **file path** for a single input and write
+one BED file. For multi-input runs (BAM list / multiple BED files) you may pass a
+**directory**, and one file per input is written as `<basename><suffix>.bed`.
+
+| Option | File / Dir | Description |
+|--------|------------|-------------|
+| `--out_original_junctions PATH` | file (single) / dir (multi) | All junctions before filtering. Works for BAM, GTF, and BED input |
+| `--out_kept_junctions FILE` | file | Non-spurious (kept) junctions |
+| `--removed_alignments_bam` | flag | Also write the *removed* alignments alongside each filtered BAM. The output is named by replacing `.bam` with `_removed_alignments.bam` (e.g. `filtered.bam` → `filtered_removed_alignments.bam`) |
+| `--filtered_bam_suffix STR` | — | Suffix for per-input filtered BAMs in directory mode (default: `_EASTR_filtered`) |
 
 </details>
 

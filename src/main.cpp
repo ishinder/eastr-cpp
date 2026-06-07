@@ -11,6 +11,9 @@
 #include "eastr/junction_accumulator.hpp"
 #include "eastr/streaming_spurious_detector.hpp"
 #include "eastr/parallel_bam_extractor.hpp"
+#include "eastr/path_utils.hpp"
+#include "eastr/input_detect.hpp"
+#include "eastr/version.hpp"
 
 #include <CLI/CLI.hpp>
 
@@ -179,63 +182,82 @@ std::tuple<std::string, std::string, bool> build_bowtie2_index(
     }
 }
 
-// Check if path is a file (has extension) or directory
-bool is_file_path(const std::string& path) {
-    size_t last_dot = path.find_last_of('.');
-    size_t last_slash = path.find_last_of("/\\");
-    return last_dot != std::string::npos &&
-           (last_slash == std::string::npos || last_dot > last_slash);
-}
+enum class ListKind { Bam, Bed };
 
-// Expand file list (if .txt file, read paths from it)
-std::vector<std::string> expand_file_list(const std::string& path) {
+// Read a text file listing one input path per line.
+std::vector<std::string> read_path_list(const std::string& path) {
     std::vector<std::string> files;
+    std::ifstream list_file(path);
+    if (!list_file.is_open()) {
+        throw std::runtime_error("Cannot open file list: " + path);
+    }
 
-    // Check extension
-    size_t dot_pos = path.find_last_of('.');
-    std::string ext = (dot_pos != std::string::npos) ? path.substr(dot_pos) : "";
+    std::string line;
+    while (std::getline(list_file, line)) {
+        // Trim whitespace
+        line.erase(0, line.find_first_not_of(" \t\r\n"));
+        line.erase(line.find_last_not_of(" \t\r\n") + 1);
 
-    if (ext == ".bam" || ext == ".cram" || ext == ".sam" ||
-        ext == ".bed" || ext == ".gtf" || ext == ".gff") {
-        // Single file
-        files.push_back(path);
-    } else {
-        // Assume it's a list file
-        std::ifstream list_file(path);
-        if (!list_file.is_open()) {
-            throw std::runtime_error("Cannot open file list: " + path);
-        }
-
-        std::string line;
-        while (std::getline(list_file, line)) {
-            // Trim whitespace
-            line.erase(0, line.find_first_not_of(" \t\r\n"));
-            line.erase(line.find_last_not_of(" \t\r\n") + 1);
-
-            if (!line.empty()) {
-                if (!fs::exists(line)) {
-                    throw std::runtime_error("File not found: " + line);
-                }
-                files.push_back(line);
+        if (!line.empty()) {
+            if (!fs::exists(line)) {
+                throw std::runtime_error("File not found: " + line);
             }
+            files.push_back(line);
         }
     }
 
     return files;
 }
 
+// Resolve a --bam/--bed argument into a list of input files. The "single file vs
+// list of paths" distinction is made by file *content* (not extension), so inputs
+// work regardless of name (e.g. Galaxy's "*.dat"). `force_list` (from
+// --bam_list/--bed_list) treats the argument as a list unconditionally.
+std::vector<std::string> resolve_input_files(const std::string& path, ListKind kind,
+                                             bool force_list) {
+    if (!fs::exists(path)) {
+        throw std::runtime_error("Input file not found: " + path);
+    }
+
+    if (force_list) {
+        return read_path_list(path);
+    }
+
+    bool single = (kind == ListKind::Bam) ? eastr::is_alignment_file(path)
+                                          : eastr::is_bed_file(path);
+    if (single) {
+        return {path};
+    }
+
+    // Auto-detected a list of paths. Supported for backward compatibility, but
+    // the explicit flag is preferred.
+    std::cerr << "Warning: '" << path << "' was auto-detected as a list of file paths. "
+              << "This is deprecated; pass --"
+              << (kind == ListKind::Bam ? "bam_list" : "bed_list")
+              << " to declare a list file explicitly.\n";
+    return read_path_list(path);
+}
+
 int main(int argc, char* argv[]) {
     CLI::App app{"eastr: Emending alignments of spuriously spliced transcript reads"};
 
+    // --version prints the version and exits 0 (before --reference is validated).
+    app.set_version_flag("--version", std::string("eastr ") + eastr::kVersion);
+
     eastr::Config config;
 
-    // Input options (mutually exclusive)
+    // Input options (mutually exclusive). Input type is detected by file content,
+    // not by extension, so any filename works (e.g. Galaxy's "*.dat").
     auto* gtf_opt = app.add_option("--gtf", config.gtf_path,
         "Input GTF file containing transcript annotations");
     auto* bed_opt = app.add_option("--bed", config.bed_path,
-        "Input BED file with intron coordinates");
+        "Input BED file with intron coordinates (or a list of BED paths; see --bed_list)");
     auto* bam_opt = app.add_option("--bam", config.bam_path,
-        "Input BAM file or TXT file containing list of BAM files");
+        "Input BAM file (or a list of BAM paths; see --bam_list)");
+    app.add_flag("--bed_list", config.bed_list,
+        "Treat the --bed argument as a text file listing BED paths (one per line)");
+    app.add_flag("--bam_list", config.bam_list,
+        "Treat the --bam argument as a text file listing BAM paths (one per line)");
 
     gtf_opt->excludes(bed_opt)->excludes(bam_opt);
     bed_opt->excludes(gtf_opt)->excludes(bam_opt);
@@ -339,11 +361,12 @@ int main(int argc, char* argv[]) {
         eastr::JunctionMap spurious;  // Declare early for streaming path
         bool is_bam_input = false;
         std::vector<std::string> bam_files;
+        std::vector<std::string> bed_files;  // Populated for BED input (output reuse)
         std::vector<std::string> sample_names;  // For consistent output ordering
 
         if (!config.bam_path.empty()) {
             is_bam_input = true;
-            bam_files = expand_file_list(config.bam_path);
+            bam_files = resolve_input_files(config.bam_path, ListKind::Bam, config.bam_list);
 
             // Get sample names (for consistent output ordering)
             for (size_t i = 0; i < bam_files.size(); ++i) {
@@ -366,6 +389,12 @@ int main(int argc, char* argv[]) {
                 std::vector<std::string> orig_junction_paths =
                     eastr::OutputWriter::generate_junction_output_paths(
                         bam_files, config.out_original_junctions, "_original_junctions");
+
+                // Create parent directory if needed
+                fs::path dir = fs::path(orig_junction_paths[0]).parent_path();
+                if (!dir.empty()) {
+                    fs::create_directories(dir);
+                }
 
                 eastr::OutputWriter::write_spurious_bed(
                     junctions, config.scoring, orig_junction_paths[0],
@@ -398,7 +427,7 @@ int main(int argc, char* argv[]) {
             }
 
         } else if (!config.bed_path.empty()) {
-            auto bed_files = expand_file_list(config.bed_path);
+            bed_files = resolve_input_files(config.bed_path, ListKind::Bed, config.bed_list);
 
             if (config.verbose) {
                 std::cerr << "Parsing BED files...\n";
@@ -450,6 +479,27 @@ int main(int argc, char* argv[]) {
             output_type = eastr::OutputWriter::InputType::BED;
         } else {
             output_type = eastr::OutputWriter::InputType::BAM;
+        }
+
+        // Write original (pre-filtering) junctions for GTF/BED inputs if requested.
+        // (BAM inputs handle this above, during parallel extraction.)
+        if (!is_bam_input && !config.out_original_junctions.empty()) {
+            std::vector<std::string> input_files =
+                !config.bed_path.empty() ? bed_files
+                                         : std::vector<std::string>{config.gtf_path};
+            std::vector<std::string> orig_junction_paths =
+                eastr::OutputWriter::generate_junction_output_paths(
+                    input_files, config.out_original_junctions, "_original_junctions");
+
+            // Create parent directory if needed
+            fs::path dir = fs::path(orig_junction_paths[0]).parent_path();
+            if (!dir.empty()) {
+                fs::create_directories(dir);
+            }
+
+            eastr::OutputWriter::write_spurious_bed(
+                junctions, config.scoring, orig_junction_paths[0],
+                output_type, sample_names);
         }
 
         // Output results

@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest      # x86_64
+          - ubuntu-24.04-arm   # linux-aarch64 (AWS Graviton / Galaxy compute)
+          - macos-latest       # osx-arm64 (Apple Silicon)
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive  # minimap2 (+ its sse2neon dir) is a submodule
+
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ zlib1g-dev libhts-dev
+
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install cmake htslib
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DEASTR_BUILD_TESTS=ON
+
+      - name: Build
+        run: cmake --build build -j
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+  version-consistency:
+    name: version consistency
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check CMake and conda versions match
+        run: |
+          cmake_ver=$(sed -n 's/^project(eastr VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)
+          conda_ver=$(sed -n 's/.*set version = "\([0-9.]*\)".*/\1/p' conda/meta.yaml)
+          echo "CMake: $cmake_ver  conda: $conda_ver"
+          if [ "$cmake_ver" != "$conda_ver" ]; then
+            echo "::error::Version drift: CMakeLists.txt=$cmake_ver conda/meta.yaml=$conda_ver"
+            exit 1
+          fi
