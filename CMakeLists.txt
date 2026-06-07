@@ -1,10 +1,18 @@
 cmake_minimum_required(VERSION 3.16)
-project(eastr VERSION 2.0.0 LANGUAGES CXX C)
+project(eastr VERSION 2.1.0 LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# Generate the version header from the single source of truth (project VERSION),
+# so the git tag, CMake version, --version output and conda package can't drift.
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/eastr/version.hpp.in
+    ${CMAKE_CURRENT_BINARY_DIR}/generated/eastr/version.hpp
+    @ONLY
+)
 
 # Options
 option(EASTR_BUILD_TESTS "Build tests" OFF)
@@ -135,6 +143,8 @@ add_library(eastr_lib STATIC
     src/junction.cpp
     src/bed_parser.cpp
     src/gtf_parser.cpp
+    src/path_utils.cpp
+    src/input_detect.cpp
     src/fasta_index.cpp
     src/junction_extractor.cpp
     src/self_aligner.cpp
@@ -151,8 +161,17 @@ add_library(eastr_lib STATIC
 
 target_include_directories(eastr_lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_BINARY_DIR}/generated
     ${HTSLIB_INCLUDE_DIRS}
 )
+
+# When htslib is found via pkg-config, HTSLIB_LIBRARIES holds the bare name
+# ("hts") and the directory is in HTSLIB_LIBRARY_DIRS. That dir is on the default
+# linker path on Linux but not for Homebrew on macOS (/opt/homebrew/lib), so add
+# it explicitly to avoid "ld: library 'hts' not found".
+if(HTSLIB_LIBRARY_DIRS)
+    target_link_directories(eastr_lib PUBLIC ${HTSLIB_LIBRARY_DIRS})
+endif()
 
 target_link_libraries(eastr_lib PUBLIC
     ${HTSLIB_LIBRARIES}
