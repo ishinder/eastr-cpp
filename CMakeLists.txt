@@ -165,6 +165,14 @@ target_include_directories(eastr_lib PUBLIC
     ${HTSLIB_INCLUDE_DIRS}
 )
 
+# When htslib is found via pkg-config, HTSLIB_LIBRARIES holds the bare name
+# ("hts") and the directory is in HTSLIB_LIBRARY_DIRS. That dir is on the default
+# linker path on Linux but not for Homebrew on macOS (/opt/homebrew/lib), so add
+# it explicitly to avoid "ld: library 'hts' not found".
+if(HTSLIB_LIBRARY_DIRS)
+    target_link_directories(eastr_lib PUBLIC ${HTSLIB_LIBRARY_DIRS})
+endif()
+
 target_link_libraries(eastr_lib PUBLIC
     ${HTSLIB_LIBRARIES}
     ZLIB::ZLIB
