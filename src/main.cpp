@@ -335,13 +335,14 @@ int main(int argc, char* argv[]) {
         // Index reference if needed
         eastr::FastaIndex::ensure_indexed(config.reference_fasta);
 
-        // Determine output directory for index
+        // Determine output directory for the auto-built index. A bare output
+        // filename resolves to "" so the index is built in the default location
+        // (next to the reference) rather than in a directory named after the file.
         std::string output_dir;
         if (!config.out_filtered_bam.empty()) {
-            output_dir = fs::path(config.out_filtered_bam).parent_path().string();
-            if (output_dir.empty()) output_dir = config.out_filtered_bam;
+            output_dir = eastr::index_output_dir(config.out_filtered_bam);
         } else if (!config.out_removed_junctions.empty() && config.out_removed_junctions != "stdout") {
-            output_dir = fs::path(config.out_removed_junctions).parent_path().string();
+            output_dir = eastr::index_output_dir(config.out_removed_junctions);
         }
 
         // Build or locate bowtie2 index
@@ -510,11 +511,14 @@ int main(int argc, char* argv[]) {
             // If output is "stdout", we need a temp file for BAM filtering
             bool using_temp_bed = (spurious_bed_path == "stdout" || spurious_bed_path.empty());
             if (using_temp_bed) {
-                // Create temp file in the filtered BAM output directory
-                fs::path temp_dir = fs::path(config.out_filtered_bam).parent_path();
-                if (temp_dir.empty()) temp_dir = config.out_filtered_bam;
+                // Place the temp BED in the filtered BAM's directory. sidecar_dir
+                // never treats a single output file as a directory (so a bare
+                // "filtered.bam" resolves to "." rather than creating filtered.bam/).
+                // The name is pid-unique to avoid collisions between concurrent runs.
+                fs::path temp_dir = eastr::sidecar_dir(config.out_filtered_bam);
                 fs::create_directories(temp_dir);
-                spurious_bed_path = (temp_dir / ".eastr_spurious_temp.bed").string();
+                std::string temp_name = ".eastr_spurious_temp." + std::to_string(getpid()) + ".bed";
+                spurious_bed_path = (temp_dir / temp_name).string();
             } else {
                 // Create output directory if needed
                 fs::path dir = fs::path(spurious_bed_path).parent_path();

@@ -54,4 +54,33 @@ std::string path_parent_dir(const std::string& path) {
     return path.substr(0, last_slash);
 }
 
+std::string index_output_dir(const std::string& out_path) {
+    if (out_path.empty()) {
+        return std::string();
+    }
+    if (is_file_path(out_path)) {
+        // Place artifacts beside the output file; "" for a bare filename so the
+        // caller falls back to its default location (next to the reference).
+        size_t last_slash = out_path.find_last_of("/\\");
+        return (last_slash == std::string::npos) ? std::string()
+                                                 : out_path.substr(0, last_slash);
+    }
+    // A directory output: use it directly.
+    return out_path;
+}
+
+std::string sidecar_dir(const std::string& out_path) {
+    if (out_path.empty()) {
+        return std::string(".");
+    }
+    if (is_file_path(out_path)) {
+        // Parent of the output file, or "." for a bare filename — never the
+        // file path itself (which would create a directory named after it).
+        size_t last_slash = out_path.find_last_of("/\\");
+        return (last_slash == std::string::npos) ? std::string(".")
+                                                 : out_path.substr(0, last_slash);
+    }
+    return out_path;
+}
+
 } // namespace eastr
