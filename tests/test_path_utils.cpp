@@ -39,6 +39,31 @@ TEST_CASE("path_parent_dir returns the directory component", "[path_utils]") {
     REQUIRE(path_parent_dir("sample.bam") == ".");
 }
 
+// NOTE: index_output_dir/sidecar_dir call is_file_path, which inspects the
+// filesystem (fs::is_directory). These cases use paths that do NOT exist on
+// disk; do not create fixtures named "filtered.bam"/"outdir" or results flip.
+
+TEST_CASE("index_output_dir: bare file -> default (empty), never a directory",
+          "[path_utils]") {
+    // Regression (2.1.1): a bare "filtered.bam" must NOT be used as a directory.
+    // Empty result => build the index in the default location (next to reference).
+    REQUIRE(index_output_dir("") == "");
+    REQUIRE(index_output_dir("filtered.bam") == "");
+    REQUIRE(index_output_dir("out/filtered.bam") == "out");
+    REQUIRE(index_output_dir("a/b/c/f.bam") == "a/b/c");
+    REQUIRE(index_output_dir("outdir") == "outdir");  // no extension => a directory
+}
+
+TEST_CASE("sidecar_dir: bare file -> '.', never a directory", "[path_utils]") {
+    // Regression (2.1.1): a bare "filtered.bam" must resolve to "." (cwd), not
+    // create a directory named "filtered.bam/".
+    REQUIRE(sidecar_dir("") == ".");
+    REQUIRE(sidecar_dir("filtered.bam") == ".");
+    REQUIRE(sidecar_dir("out/filtered.bam") == "out");
+    REQUIRE(sidecar_dir("a/b/filt.bam") == "a/b");
+    REQUIRE(sidecar_dir("outdir") == "outdir");
+}
+
 TEST_CASE("generate_junction_output_paths: single input + file path", "[output_writer]") {
     // Single input, bare filename -> use the path as-is (issue #3 core).
     auto paths = OutputWriter::generate_junction_output_paths(
@@ -69,6 +94,14 @@ TEST_CASE("generate_bam_output_paths: single input + file path", "[output_writer
         {"sample.bam"}, "out.bam", "_EASTR_filtered");
     REQUIRE(paths.size() == 1);
     REQUIRE(paths[0] == "out.bam");
+}
+
+TEST_CASE("generate_bam_output_paths: single input + directory", "[output_writer]") {
+    // Single BAM + a directory path -> one per-sample file inside the directory.
+    auto paths = OutputWriter::generate_bam_output_paths(
+        {"/d/sample.bam"}, "outdir", "_EASTR_filtered");
+    REQUIRE(paths.size() == 1);
+    REQUIRE(paths[0] == "outdir/sample_EASTR_filtered.bam");
 }
 
 TEST_CASE("generate_bam_output_paths: multi input uses directory", "[output_writer]") {

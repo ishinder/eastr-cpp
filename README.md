@@ -100,6 +100,8 @@ eastr --gtf annotation.gtf \
 ```
 
 > **Note:** The `-i` (bowtie2 index) flag is optional. If omitted, EASTR will automatically build an index from the reference FASTA, which adds a few minutes for large genomes. Providing a pre-built index speeds up repeated runs.
+>
+> The auto-built index is written to its own `<reference>_bt2_idx/` directory (it is made up of several `.bt2` files) next to the reference FASTA — or inside the `--out_filtered_bam` directory when that is a directory — and is preserved for reuse. If the reference directory is read-only, pass a pre-built index with `-i`.
 
 ### Save removed alignments for inspection
 
