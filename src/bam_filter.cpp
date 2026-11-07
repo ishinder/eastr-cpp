@@ -85,14 +85,9 @@ BamFilter::FilterStats BamFilter::filter(
     auto spurious = load_spurious_junctions(spurious_bed);
 
     // Open input BAM
-    samFile* in = open_alignment(input_bam);
+    samFile* in = open_alignment(input_bam, options_.io_threads);
     if (!in) {
         throw std::runtime_error("Cannot open input BAM: " + input_bam);
-    }
-
-    // Set I/O threads for BGZF decompression
-    if (options_.io_threads > 1) {
-        hts_set_threads(in, options_.io_threads);
     }
 
     // Read header
@@ -191,16 +186,11 @@ BamFilter::FilterStats BamFilter::filter(
     // ============ SECOND PASS: Write filtered output ============
     // Rewind the BAM file - always reopen to ensure clean state
     sam_close(in);
-    in = open_alignment(input_bam);
+    in = open_alignment(input_bam, options_.io_threads);
     if (!in) {
         bam_destroy1(aln);
         sam_hdr_destroy(header);
         throw std::runtime_error("Cannot reopen input BAM: " + input_bam);
-    }
-
-    // Set I/O threads for BGZF decompression
-    if (options_.io_threads > 1) {
-        hts_set_threads(in, options_.io_threads);
     }
 
     sam_hdr_destroy(header);

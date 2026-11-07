@@ -29,6 +29,13 @@ All notable changes to this project are documented here. This project adheres to
   was never passed to htslib, so a CRAM whose header `UR:` path was not reachable
   (e.g. one created on another machine) failed to decode every slice and EASTR
   reported **zero junctions while exiting 0**.
+- Crash (segfault/bus error), or a sample silently reporting **0 junctions**, when
+  several CRAM 3.1 inputs were processed with `-p` > 1 on arm64 macOS. htscodecs'
+  NEON rANS-Nx16 order-1 decoder uses ~1.25 MiB of stack, more than the 512 KiB
+  macOS gives `std::thread`/`std::async` threads, so decoding on EASTR's worker
+  threads overflowed into neighbouring threads' memory. CRAM inputs now always get
+  an htslib thread pool, so decoding runs on htslib's own threads (>= 3 MiB
+  stacks). x86_64 and CRAM 3.0 were not affected.
 - Clearer errors when `--bam`/`--bed` is neither a recognized file nor a list of
   existing paths. Previously this printed `File not found: <first line>` (often an
   entire data record) or, for lines over the OS filename limit, a raw

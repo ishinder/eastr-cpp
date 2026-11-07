@@ -101,14 +101,10 @@ JunctionMap ParallelBamExtractor::extract_junctions_from_bam(
     JunctionMap junctions;
 
     // Open BAM file
-    samFile* in = open_alignment(bam_path);
+    // htslib decompression threads (BGZF / CRAM) are set up by open_alignment.
+    samFile* in = open_alignment(bam_path, htslib_threads);
     if (!in) {
         throw std::runtime_error("Cannot open BAM file: " + bam_path);
-    }
-
-    // Enable multi-threaded BGZF decompression
-    if (htslib_threads > 1) {
-        hts_set_threads(in, htslib_threads);
     }
 
     // Read header
