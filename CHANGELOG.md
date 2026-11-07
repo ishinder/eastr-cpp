@@ -3,7 +3,31 @@
 All notable changes to this project are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
-## [2.1.1] - unreleased
+## [Unreleased]
+
+### Fixed
+- Passing a text file that lists BAM/BED paths to `--bam`/`--bed` no longer prints
+  a deprecation warning. 2.1.0 told users to "pass --bam_list", which reads as
+  `--bam_list FILE` and fails because `--bam_list` is a flag
+  ([ishinder/eastr-cpp#4](https://github.com/ishinder/eastr-cpp/issues/4)). List files
+  are auto-detected by content, and that is now the supported behavior;
+  `--bam_list`/`--bed_list` remain as optional overrides.
+- CRAM input is now decoded against the `-r` reference. Previously the reference
+  was never passed to htslib, so a CRAM whose header `UR:` path was not reachable
+  (e.g. one created on another machine) failed to decode every slice and EASTR
+  reported **zero junctions while exiting 0**.
+- `--bam_list` given an actual BAM/CRAM/SAM now says to drop the flag, instead of
+  misreading the binary file as a broken list.
+- Clearer errors when `--bam`/`--bed` is neither a recognized file nor a list of
+  existing paths. Previously this printed `File not found: <first line>` (often an
+  entire data record) or, for lines over the OS filename limit, a raw
+  `filesystem error ... File name too long`. Now EASTR says what the input looks
+  like: a SAM file without a header (detected by content, or by a `.sam`
+  extension), a `.bam`/`.cram` file without a valid signature (truncated or
+  corrupt), or an unrecognized file, echoing the first line only when it looks
+  like a mistyped path.
+
+## [2.1.1] - 2026-06-08
 
 ### Fixed
 - `--out_filtered_bam <file>` with a single BAM and a bare filename (no directory

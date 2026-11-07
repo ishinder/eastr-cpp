@@ -1,4 +1,5 @@
 #include "eastr/bam_filter.hpp"
+#include "eastr/alignment_io.hpp"
 #include "eastr/bed_parser.hpp"
 
 #include <htslib/sam.h>
@@ -84,7 +85,7 @@ BamFilter::FilterStats BamFilter::filter(
     auto spurious = load_spurious_junctions(spurious_bed);
 
     // Open input BAM
-    samFile* in = sam_open(input_bam.c_str(), "r");
+    samFile* in = open_alignment(input_bam);
     if (!in) {
         throw std::runtime_error("Cannot open input BAM: " + input_bam);
     }
@@ -190,7 +191,7 @@ BamFilter::FilterStats BamFilter::filter(
     // ============ SECOND PASS: Write filtered output ============
     // Rewind the BAM file - always reopen to ensure clean state
     sam_close(in);
-    in = sam_open(input_bam.c_str(), "r");
+    in = open_alignment(input_bam);
     if (!in) {
         bam_destroy1(aln);
         sam_hdr_destroy(header);

@@ -131,15 +131,16 @@ eastr --bam input.bam \
 
 | Option | Description |
 |--------|-------------|
-| `--bam FILE` | BAM file, or text file listing BAM paths (one per line) |
+| `--bam FILE` | BAM/CRAM/SAM file, or text file listing alignment paths (one per line) |
 | `--gtf FILE` | GTF annotation file |
 | `--bed FILE` | BED file with junction coordinates, or text file listing BED paths |
 | `-r, --reference FILE` | Reference genome FASTA (required for all input types) |
 
 > Input type is detected by file **content**, not by extension, so any filename
 > works (including Galaxy's `*.dat` datasets). A `--bam`/`--bed` argument that is a
-> plain-text list of paths is still accepted, but the explicit `--bam_list` /
-> `--bed_list` flags are preferred (see below).
+> plain-text list of paths is detected automatically (each line must be an existing
+> file). CRAM input is decoded against the `-r` reference, and SAM input must
+> include its header (`@HD`/`@SQ` lines).
 
 ### Common options
 
@@ -180,8 +181,10 @@ eastr --bam input.bam \
 
 | Option | Description |
 |--------|-------------|
-| `--bam_list` | Treat the `--bam` argument as a text file listing BAM paths (one per line) |
-| `--bed_list` | Treat the `--bed` argument as a text file listing BED paths (one per line) |
+| `--bam_list` | Optional: skip auto-detection and read the `--bam` argument as a list of alignment paths |
+| `--bed_list` | Optional: skip auto-detection and read the `--bed` argument as a list of BED paths |
+
+These flags are not needed for normal use; lists are detected automatically.
 
 ### Additional output options
 

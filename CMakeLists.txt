@@ -145,6 +145,7 @@ add_library(eastr_lib STATIC
     src/gtf_parser.cpp
     src/path_utils.cpp
     src/input_detect.cpp
+    src/alignment_io.cpp
     src/fasta_index.cpp
     src/junction_extractor.cpp
     src/self_aligner.cpp

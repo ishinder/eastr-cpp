@@ -1,4 +1,5 @@
 #include "eastr/multi_bam_reader.hpp"
+#include "eastr/alignment_io.hpp"
 
 #include <cstring>
 #include <stdexcept>
@@ -25,7 +26,7 @@ MultiBamReader::MultiBamReader(const std::vector<std::string>& bam_paths) {
         const auto& path = bam_paths[i];
 
         // Open BAM file
-        samFile* fp = sam_open(path.c_str(), "r");
+        samFile* fp = open_alignment(path);
         if (!fp) {
             throw std::runtime_error("Cannot open BAM file: " + path);
         }
