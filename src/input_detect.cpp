@@ -1,5 +1,9 @@
 #include "eastr/input_detect.hpp"
 
+#include <htslib/hfile.h>
+#include <htslib/hts.h>
+
+#include <algorithm>
 #include <array>
 #include <cctype>
 #include <cstdint>
@@ -40,8 +44,6 @@ bool is_integer(const std::string& s) {
     return true;
 }
 
-// True if `line` looks like a SAM alignment record: >=11 tab-separated fields
-// with integer FLAG (col 2), POS (col 4) and MAPQ (col 5).
 // fs::exists that never throws: a data line used as a "path" can exceed
 // NAME_MAX/PATH_MAX, which makes the throwing overload raise ENAMETOOLONG.
 bool path_exists(const std::string& p) {
@@ -49,6 +51,8 @@ bool path_exists(const std::string& p) {
     return fs::exists(p, ec);
 }
 
+// True if `line` looks like a SAM alignment record: >=11 tab-separated fields
+// with integer FLAG (col 2), POS (col 4) and MAPQ (col 5).
 bool looks_like_sam_record(const std::string& line) {
     std::vector<std::string> cols;
     std::istringstream iss(line);
@@ -117,6 +121,17 @@ bool is_alignment_file(const std::string& path) {
 
     // Otherwise assume a plain-text list of alignment paths.
     return false;
+}
+
+bool is_alignment_format(const std::string& path) {
+    hFILE* hf = hopen(path.c_str(), "r");
+    if (!hf) return false;
+    htsFormat fmt;
+    const bool ok = hts_detect_format2(hf, path.c_str(), &fmt) == 0;
+    hclose_abruptly(hf);
+    // Index files (.bai/.crai/.csi), FASTA, BED, VCF, plain gzip, ... are other
+    // formats, so only real alignment files are selected.
+    return ok && (fmt.format == bam || fmt.format == cram || fmt.format == sam);
 }
 
 bool is_bed_file(const std::string& path) {
@@ -188,10 +203,41 @@ std::vector<std::string> read_path_list(const std::string& path, ListKind kind) 
     return files;
 }
 
+std::vector<std::string> alignment_files_in_directory(const std::string& dir) {
+    std::vector<std::string> files;
+    for (const auto& entry : fs::directory_iterator(dir)) {
+        const std::string name = entry.path().filename().string();
+        if (name.empty() || name[0] == '.') continue;  // hidden files (.DS_Store etc.)
+        if (!entry.is_regular_file()) continue;        // not recursive; follows symlinks
+        if (is_alignment_format(entry.path().string())) {
+            files.push_back(entry.path().string());
+        }
+    }
+    if (files.empty()) {
+        throw std::runtime_error("'" + dir + "' is a directory with no BAM/CRAM/SAM files "
+                                 "in it (subdirectories are not searched).");
+    }
+    // directory_iterator order is unspecified; sort so output order is stable.
+    std::sort(files.begin(), files.end());
+    return files;
+}
+
 std::vector<std::string> resolve_input_files(const std::string& path, ListKind kind,
                                              bool force_list) {
     if (!fs::exists(path)) {
         throw std::runtime_error("Input file not found: " + path);
+    }
+
+    if (fs::is_directory(path)) {
+        if (kind != ListKind::Bam) {
+            throw std::runtime_error("'" + path + "' is a directory. --bed takes a BED "
+                                     "file, or a text file listing one BED path per line.");
+        }
+        if (force_list) {
+            throw std::runtime_error("'" + path + "' is a directory, not a list file. "
+                                     "Drop --bam_list to use the alignment files in it.");
+        }
+        return alignment_files_in_directory(path);
     }
 
     if (!force_list) {

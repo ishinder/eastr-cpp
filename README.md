@@ -131,7 +131,7 @@ eastr --bam input.bam \
 
 | Option | Description |
 |--------|-------------|
-| `--bam FILE` | BAM/CRAM/SAM file, or text file listing alignment paths (one per line) |
+| `--bam PATH` | BAM/CRAM/SAM file, a text file listing alignment paths (one per line), or a directory of alignment files |
 | `--gtf FILE` | GTF annotation file |
 | `--bed FILE` | BED file with junction coordinates, or text file listing BED paths |
 | `-r, --reference FILE` | Reference genome FASTA (required for all input types) |
@@ -141,6 +141,13 @@ eastr --bam input.bam \
 > plain-text list of paths is detected automatically (each line must be an existing
 > file). CRAM input is decoded against the `-r` reference, and SAM input must
 > include its header (`@HD`/`@SQ` lines).
+>
+> When `--bam` is a **directory**, every BAM/CRAM/SAM file directly inside it is
+> processed together in one run, in filename order. Files are selected by content,
+> so index files (`.bai`, `.csi`), FASTA and other files can sit alongside them;
+> hidden files and subdirectories are ignored. Multiple BAMs are analyzed jointly:
+> junction support is summed across samples (see `--min_junc_score`), so one run
+> over all samples can differ from separate per-sample runs.
 
 ### Common options
 

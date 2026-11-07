@@ -198,7 +198,7 @@ int main(int argc, char* argv[]) {
     auto* bed_opt = app.add_option("--bed", config.bed_path,
         "Input BED file with intron coordinates, or a text file listing BED paths (auto-detected)");
     auto* bam_opt = app.add_option("--bam", config.bam_path,
-        "Input BAM/CRAM/SAM file, or a text file listing alignment paths (auto-detected)");
+        "Input BAM/CRAM/SAM file, a text file listing alignment paths, or a directory of alignment files (auto-detected)");
     app.add_flag("--bed_list", config.bed_list,
         "Optional: skip auto-detection and read the --bed argument as a list of BED paths");
     app.add_flag("--bam_list", config.bam_list,

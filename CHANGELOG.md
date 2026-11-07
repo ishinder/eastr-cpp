@@ -3,7 +3,14 @@
 All notable changes to this project are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [2.1.2] - unreleased
+
+### Added
+- `--bam` accepts a **directory**: every BAM/CRAM/SAM directly inside it is
+  processed in one run, in sorted filename order. Files are chosen by htslib format
+  detection (not by extension), so indexes and other files in the directory are
+  skipped; hidden files and subdirectories are ignored. Previously a directory was
+  silently read as an empty path list, producing no junctions and exiting 0.
 
 ### Fixed
 - Passing a text file that lists BAM/BED paths to `--bam`/`--bed` no longer prints
