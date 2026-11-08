@@ -36,6 +36,11 @@ All notable changes to this project are documented here. This project adheres to
   threads overflowed into neighbouring threads' memory. CRAM inputs now always get
   an htslib thread pool, so decoding runs on htslib's own threads (>= 3 MiB
   stacks). x86_64 and CRAM 3.0 were not affected.
+- Inputs that share a filename stem (e.g. `a/S1.bam` and `b/S1.cram`) got the same
+  sample name, so their per-sample outputs overwrote each other; this is now an
+  error. `--bam <dir>` with `--out_filtered_bam` pointing at the same directory is
+  also an error, since a re-run would read EASTR's own filtered BAMs as extra
+  samples.
 - Clearer errors when `--bam`/`--bed` is neither a recognized file nor a list of
   existing paths. Previously this printed `File not found: <first line>` (often an
   entire data record) or, for lines over the OS filename limit, a raw
