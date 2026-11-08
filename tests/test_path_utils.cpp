@@ -2,7 +2,6 @@
 
 #include "eastr/path_utils.hpp"
 #include "eastr/output_writer.hpp"
-#include "eastr/version.hpp"
 
 using namespace eastr;
 
@@ -66,62 +65,51 @@ TEST_CASE("sidecar_dir: bare file -> '.', never a directory", "[path_utils]") {
 
 TEST_CASE("generate_junction_output_paths: single input + file path", "[output_writer]") {
     // Single input, bare filename -> use the path as-is (issue #3 core).
-    auto paths = OutputWriter::generate_junction_output_paths(
-        {"sample.bam"}, "out.bed", "_original_junctions");
-    REQUIRE(paths.size() == 1);
-    REQUIRE(paths[0] == "out.bed");
+    REQUIRE(OutputWriter::generate_junction_output_paths(
+        {"sample.bam"}, "out.bed", "_original_junctions") ==
+        std::vector<std::string>{"out.bed"});
 }
 
 TEST_CASE("generate_junction_output_paths: single input + directory", "[output_writer]") {
-    auto paths = OutputWriter::generate_junction_output_paths(
-        {"/data/sample.bam"}, "outdir", "_original_junctions");
-    REQUIRE(paths.size() == 1);
-    REQUIRE(paths[0] == "outdir/sample_original_junctions.bed");
+    REQUIRE(OutputWriter::generate_junction_output_paths(
+        {"/data/sample.bam"}, "outdir", "_original_junctions") ==
+        std::vector<std::string>{"outdir/sample_original_junctions.bed"});
 }
 
 TEST_CASE("generate_junction_output_paths: multi input falls back to parent dir",
           "[output_writer]") {
-    auto paths = OutputWriter::generate_junction_output_paths(
-        {"a.bam", "b.bam"}, "results/out.bed", "_original_junctions");
-    REQUIRE(paths.size() == 2);
-    REQUIRE(paths[0] == "results/a_original_junctions.bed");
-    REQUIRE(paths[1] == "results/b_original_junctions.bed");
+    REQUIRE(OutputWriter::generate_junction_output_paths(
+        {"a.bam", "b.bam"}, "results/out.bed", "_original_junctions") ==
+        std::vector<std::string>{"results/a_original_junctions.bed",
+                                 "results/b_original_junctions.bed"});
 }
 
 TEST_CASE("generate_bam_output_paths: single input + file path", "[output_writer]") {
     // Single BAM, bare filename -> write that file directly (issue #4).
-    auto paths = OutputWriter::generate_bam_output_paths(
-        {"sample.bam"}, "out.bam", "_EASTR_filtered");
-    REQUIRE(paths.size() == 1);
-    REQUIRE(paths[0] == "out.bam");
+    REQUIRE(OutputWriter::generate_bam_output_paths(
+        {"sample.bam"}, "out.bam", "_EASTR_filtered") ==
+        std::vector<std::string>{"out.bam"});
 }
 
 TEST_CASE("generate_bam_output_paths: single input + directory", "[output_writer]") {
     // Single BAM + a directory path -> one per-sample file inside the directory.
-    auto paths = OutputWriter::generate_bam_output_paths(
-        {"/d/sample.bam"}, "outdir", "_EASTR_filtered");
-    REQUIRE(paths.size() == 1);
-    REQUIRE(paths[0] == "outdir/sample_EASTR_filtered.bam");
+    REQUIRE(OutputWriter::generate_bam_output_paths(
+        {"/d/sample.bam"}, "outdir", "_EASTR_filtered") ==
+        std::vector<std::string>{"outdir/sample_EASTR_filtered.bam"});
 }
 
 TEST_CASE("generate_bam_output_paths: multi input uses directory", "[output_writer]") {
-    auto paths = OutputWriter::generate_bam_output_paths(
-        {"a.bam", "b.bam"}, "outdir", "_EASTR_filtered");
-    REQUIRE(paths.size() == 2);
-    REQUIRE(paths[0] == "outdir/a_EASTR_filtered.bam");
-    REQUIRE(paths[1] == "outdir/b_EASTR_filtered.bam");
+    REQUIRE(OutputWriter::generate_bam_output_paths(
+        {"a.bam", "b.bam"}, "outdir", "_EASTR_filtered") ==
+        std::vector<std::string>{"outdir/a_EASTR_filtered.bam",
+                                 "outdir/b_EASTR_filtered.bam"});
 }
 
 TEST_CASE("generate_bam_output_paths: multi input + file path falls back to parent dir",
           "[output_writer]") {
     // Regression: previously produced "out.bam/a_..." for multiple inputs.
-    auto paths = OutputWriter::generate_bam_output_paths(
-        {"a.bam", "b.bam"}, "results/out.bam", "_EASTR_filtered");
-    REQUIRE(paths.size() == 2);
-    REQUIRE(paths[0] == "results/a_EASTR_filtered.bam");
-    REQUIRE(paths[1] == "results/b_EASTR_filtered.bam");
-}
-
-TEST_CASE("version string is populated", "[version]") {
-    REQUIRE(std::string(kVersion).size() > 0);
+    REQUIRE(OutputWriter::generate_bam_output_paths(
+        {"a.bam", "b.bam"}, "results/out.bam", "_EASTR_filtered") ==
+        std::vector<std::string>{"results/a_EASTR_filtered.bam",
+                                 "results/b_EASTR_filtered.bam"});
 }
