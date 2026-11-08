@@ -1,4 +1,5 @@
 #include "eastr/parallel_bam_extractor.hpp"
+#include "eastr/alignment_io.hpp"
 #include "eastr/thread_pool.hpp"
 
 #include <htslib/sam.h>
@@ -100,14 +101,10 @@ JunctionMap ParallelBamExtractor::extract_junctions_from_bam(
     JunctionMap junctions;
 
     // Open BAM file
-    samFile* in = sam_open(bam_path.c_str(), "r");
+    // htslib decompression threads (BGZF / CRAM) are set up by open_alignment.
+    samFile* in = open_alignment(bam_path, htslib_threads);
     if (!in) {
         throw std::runtime_error("Cannot open BAM file: " + bam_path);
-    }
-
-    // Enable multi-threaded BGZF decompression
-    if (htslib_threads > 1) {
-        hts_set_threads(in, htslib_threads);
     }
 
     // Read header
@@ -141,7 +138,7 @@ JunctionMap ParallelBamExtractor::extract_junctions_from_region(
     JunctionMap junctions;
 
     // Open BAM file
-    samFile* in = sam_open(bam_path.c_str(), "r");
+    samFile* in = open_alignment(bam_path);
     if (!in) {
         throw std::runtime_error("Cannot open BAM file: " + bam_path);
     }
@@ -205,7 +202,7 @@ JunctionMap ParallelBamExtractor::extract_junctions_from_bam_tiled(
     }
 
     // Open BAM to get header info
-    samFile* in = sam_open(bam_path.c_str(), "r");
+    samFile* in = open_alignment(bam_path);
     if (!in) {
         throw std::runtime_error("Cannot open BAM file: " + bam_path);
     }

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(eastr VERSION 2.1.1 LANGUAGES CXX C)
+project(eastr VERSION 2.1.2 LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -145,6 +145,7 @@ add_library(eastr_lib STATIC
     src/gtf_parser.cpp
     src/path_utils.cpp
     src/input_detect.cpp
+    src/alignment_io.cpp
     src/fasta_index.cpp
     src/junction_extractor.cpp
     src/self_aligner.cpp

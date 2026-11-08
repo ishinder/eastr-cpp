@@ -13,6 +13,7 @@
 #include "eastr/parallel_bam_extractor.hpp"
 #include "eastr/path_utils.hpp"
 #include "eastr/input_detect.hpp"
+#include "eastr/alignment_io.hpp"
 #include "eastr/version.hpp"
 
 #include <CLI/CLI.hpp>
@@ -182,62 +183,6 @@ std::tuple<std::string, std::string, bool> build_bowtie2_index(
     }
 }
 
-enum class ListKind { Bam, Bed };
-
-// Read a text file listing one input path per line.
-std::vector<std::string> read_path_list(const std::string& path) {
-    std::vector<std::string> files;
-    std::ifstream list_file(path);
-    if (!list_file.is_open()) {
-        throw std::runtime_error("Cannot open file list: " + path);
-    }
-
-    std::string line;
-    while (std::getline(list_file, line)) {
-        // Trim whitespace
-        line.erase(0, line.find_first_not_of(" \t\r\n"));
-        line.erase(line.find_last_not_of(" \t\r\n") + 1);
-
-        if (!line.empty()) {
-            if (!fs::exists(line)) {
-                throw std::runtime_error("File not found: " + line);
-            }
-            files.push_back(line);
-        }
-    }
-
-    return files;
-}
-
-// Resolve a --bam/--bed argument into a list of input files. The "single file vs
-// list of paths" distinction is made by file *content* (not extension), so inputs
-// work regardless of name (e.g. Galaxy's "*.dat"). `force_list` (from
-// --bam_list/--bed_list) treats the argument as a list unconditionally.
-std::vector<std::string> resolve_input_files(const std::string& path, ListKind kind,
-                                             bool force_list) {
-    if (!fs::exists(path)) {
-        throw std::runtime_error("Input file not found: " + path);
-    }
-
-    if (force_list) {
-        return read_path_list(path);
-    }
-
-    bool single = (kind == ListKind::Bam) ? eastr::is_alignment_file(path)
-                                          : eastr::is_bed_file(path);
-    if (single) {
-        return {path};
-    }
-
-    // Auto-detected a list of paths. Supported for backward compatibility, but
-    // the explicit flag is preferred.
-    std::cerr << "Warning: '" << path << "' was auto-detected as a list of file paths. "
-              << "This is deprecated; pass --"
-              << (kind == ListKind::Bam ? "bam_list" : "bed_list")
-              << " to declare a list file explicitly.\n";
-    return read_path_list(path);
-}
-
 int main(int argc, char* argv[]) {
     CLI::App app{"eastr: Emending alignments of spuriously spliced transcript reads"};
 
@@ -251,13 +196,13 @@ int main(int argc, char* argv[]) {
     auto* gtf_opt = app.add_option("--gtf", config.gtf_path,
         "Input GTF file containing transcript annotations");
     auto* bed_opt = app.add_option("--bed", config.bed_path,
-        "Input BED file with intron coordinates (or a list of BED paths; see --bed_list)");
+        "Input BED file with intron coordinates, or a text file listing BED paths (auto-detected)");
     auto* bam_opt = app.add_option("--bam", config.bam_path,
-        "Input BAM file (or a list of BAM paths; see --bam_list)");
+        "Input BAM/CRAM/SAM file, a text file listing alignment paths, or a directory of alignment files (auto-detected)");
     app.add_flag("--bed_list", config.bed_list,
-        "Treat the --bed argument as a text file listing BED paths (one per line)");
+        "Optional: skip auto-detection and read the --bed argument as a list of BED paths");
     app.add_flag("--bam_list", config.bam_list,
-        "Treat the --bam argument as a text file listing BAM paths (one per line)");
+        "Optional: skip auto-detection and read the --bam argument as a list of alignment paths");
 
     gtf_opt->excludes(bed_opt)->excludes(bam_opt);
     bed_opt->excludes(gtf_opt)->excludes(bam_opt);
@@ -334,6 +279,8 @@ int main(int argc, char* argv[]) {
     try {
         // Index reference if needed
         eastr::FastaIndex::ensure_indexed(config.reference_fasta);
+        // CRAM inputs are decoded against -r (no-op for BAM/SAM).
+        eastr::set_alignment_reference(config.reference_fasta);
 
         // Determine output directory for the auto-built index. A bare output
         // filename resolves to "" so the index is built in the default location
@@ -367,12 +314,20 @@ int main(int argc, char* argv[]) {
 
         if (!config.bam_path.empty()) {
             is_bam_input = true;
-            bam_files = resolve_input_files(config.bam_path, ListKind::Bam, config.bam_list);
+            bam_files = eastr::resolve_input_files(config.bam_path, eastr::ListKind::Bam, config.bam_list);
 
             // Get sample names (for consistent output ordering)
             for (size_t i = 0; i < bam_files.size(); ++i) {
                 fs::path p(bam_files[i]);
                 sample_names.push_back(p.stem().string());
+            }
+            // Fail fast, before any alignment work, on inputs/outputs that collide.
+            eastr::check_unique_sample_names(bam_files);
+            if (!config.out_filtered_bam.empty() && fs::is_directory(config.bam_path)) {
+                eastr::check_outputs_outside_input_dir(
+                    config.bam_path,
+                    eastr::OutputWriter::generate_bam_output_paths(
+                        bam_files, config.out_filtered_bam, config.filtered_bam_suffix));
             }
 
             if (config.verbose) {
@@ -428,7 +383,7 @@ int main(int argc, char* argv[]) {
             }
 
         } else if (!config.bed_path.empty()) {
-            bed_files = resolve_input_files(config.bed_path, ListKind::Bed, config.bed_list);
+            bed_files = eastr::resolve_input_files(config.bed_path, eastr::ListKind::Bed, config.bed_list);
 
             if (config.verbose) {
                 std::cerr << "Parsing BED files...\n";

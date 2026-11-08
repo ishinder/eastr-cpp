@@ -1,4 +1,5 @@
 #include "eastr/junction_extractor.hpp"
+#include "eastr/alignment_io.hpp"
 
 #include <htslib/sam.h>
 
@@ -43,7 +44,7 @@ JunctionExtractor::JunctionExtractor(const std::string& bam_path)
     }
 
     // Open BAM file
-    pImpl_->bam_file = sam_open(bam_path.c_str(), "r");
+    pImpl_->bam_file = open_alignment(bam_path);
     if (!pImpl_->bam_file) {
         throw std::runtime_error("Cannot open BAM file: " + bam_path);
     }

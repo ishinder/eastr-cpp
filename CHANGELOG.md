@@ -3,7 +3,49 @@
 All notable changes to this project are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
-## [2.1.1] - unreleased
+## [2.1.2] - unreleased
+
+### Added
+- `--bam` accepts a **directory**: every BAM/CRAM/SAM directly inside it is
+  processed in one run, in sorted filename order. Files are chosen by htslib format
+  detection (not by extension), so indexes and other files in the directory are
+  skipped; hidden files and subdirectories are ignored. Previously a directory was
+  silently read as an empty path list, producing no junctions and exiting 0.
+
+### Fixed
+- Passing a text file that lists BAM/BED paths to `--bam`/`--bed` no longer prints
+  a deprecation warning. 2.1.0 told users to "pass --bam_list", which reads as
+  `--bam_list FILE` and fails because `--bam_list` is a flag
+  ([ishinder/eastr-cpp#4](https://github.com/ishinder/eastr-cpp/issues/4)). List files
+  are auto-detected by content, and that is the supported behavior.
+  `--bam_list`/`--bed_list` still work as in 2.1.x (they skip auto-detection and
+  read the argument as a list) but are optional; their help text now says so.
+- CRAM input is now decoded against the `-r` reference. Previously the reference
+  was never passed to htslib, so a CRAM whose header `UR:` path was not reachable
+  (e.g. one created on another machine) failed to decode every slice and EASTR
+  reported **zero junctions while exiting 0**.
+- Crash (segfault/bus error), or a sample silently reporting **0 junctions**, when
+  several CRAM 3.1 inputs were processed with `-p` > 1 on arm64 macOS. htscodecs'
+  NEON rANS-Nx16 order-1 decoder uses ~1.25 MiB of stack, more than the 512 KiB
+  macOS gives `std::thread`/`std::async` threads, so decoding on EASTR's worker
+  threads overflowed into neighbouring threads' memory. CRAM inputs now always get
+  an htslib thread pool, so decoding runs on htslib's own threads (>= 3 MiB
+  stacks). x86_64 and CRAM 3.0 were not affected.
+- Inputs that share a filename stem (e.g. `a/S1.bam` and `b/S1.cram`) got the same
+  sample name, so their per-sample outputs overwrote each other; this is now an
+  error. `--bam <dir>` with `--out_filtered_bam` pointing at the same directory is
+  also an error, since a re-run would read EASTR's own filtered BAMs as extra
+  samples.
+- Clearer errors when `--bam`/`--bed` is neither a recognized file nor a list of
+  existing paths. Previously this printed `File not found: <first line>` (often an
+  entire data record) or, for lines over the OS filename limit, a raw
+  `filesystem error ... File name too long`. Now EASTR says what the input looks
+  like: a SAM file without a header (detected by content, or by a `.sam`
+  extension), a `.bam`/`.cram` file without a valid signature (truncated or
+  corrupt), or an unrecognized file, echoing the first line only when it looks
+  like a mistyped path.
+
+## [2.1.1] - 2026-06-08
 
 ### Fixed
 - `--out_filtered_bam <file>` with a single BAM and a bare filename (no directory

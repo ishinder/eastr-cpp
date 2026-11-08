@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "eastr/bed_parser.hpp"
+#include "test_temp.hpp"
 
 #include <fstream>
 #include <filesystem>
@@ -10,24 +11,16 @@ using namespace eastr;
 
 class TempBedFile {
 public:
-    TempBedFile(const std::string& content) {
-        path_ = fs::temp_directory_path() / ("test_" + std::to_string(counter_++) + ".bed");
-        std::ofstream file(path_);
-        file << content;
-    }
-
-    ~TempBedFile() {
-        fs::remove(path_);
+    TempBedFile(const std::string& content) : path_(dir_.file("input.bed")) {
+        std::ofstream(path_) << content;
     }
 
     const fs::path& path() const { return path_; }
 
 private:
+    eastr_test::TempDir dir_;
     fs::path path_;
-    static int counter_;
 };
-
-int TempBedFile::counter_ = 0;
 
 TEST_CASE("BED parser - basic parsing", "[bed_parser]") {
     TempBedFile bed(
@@ -50,27 +43,16 @@ TEST_CASE("BED parser - basic parsing", "[bed_parser]") {
     REQUIRE(junctions[key2].second == 10);
 }
 
-TEST_CASE("BED parser - skip comments and track", "[bed_parser]") {
+TEST_CASE("BED parser skips comments, tracks and blank lines", "[bed_parser]") {
     TempBedFile bed(
         "# This is a comment\n"
         "track name=junctions\n"
+        "\n"
         "chr1\t100\t200\tJUNC1\t5\t+\n"
+        "\n"
     );
 
     auto junctions = BedParser::parse(bed.path().string());
 
     REQUIRE(junctions.size() == 1);
-}
-
-TEST_CASE("BED parser - empty lines", "[bed_parser]") {
-    TempBedFile bed(
-        "chr1\t100\t200\tJUNC1\t5\t+\n"
-        "\n"
-        "chr1\t300\t400\tJUNC2\t10\t-\n"
-        "\n"
-    );
-
-    auto junctions = BedParser::parse(bed.path().string());
-
-    REQUIRE(junctions.size() == 2);
 }

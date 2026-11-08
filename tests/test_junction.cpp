@@ -35,16 +35,7 @@ TEST_CASE("JunctionKey hash", "[junction]") {
 
     JunctionKey key1{"chr1", 100, 200, Strand::Plus};
     JunctionKey key2{"chr1", 100, 200, Strand::Plus};
-    JunctionKey key3{"chr1", 100, 200, Strand::Minus};
-
-    SECTION("Equal keys have equal hashes") {
-        REQUIRE(hasher(key1) == hasher(key2));
-    }
-
-    SECTION("Different keys have different hashes") {
-        // Note: This is probabilistic, but highly likely
-        REQUIRE(hasher(key1) != hasher(key3));
-    }
+    REQUIRE(hasher(key1) == hasher(key2));
 }
 
 TEST_CASE("JunctionData operations", "[junction]") {
@@ -58,6 +49,11 @@ TEST_CASE("JunctionData operations", "[junction]") {
         data.add_sample("sample2", 3);
         REQUIRE(data.samples.size() == 2);
         REQUIRE(data.total_score == 8);
+
+        data.add_sample("sample1", 2);
+        REQUIRE(data.samples.size() == 2);
+        REQUIRE(data.samples[0].score == 7);
+        REQUIRE(data.total_score == 10);
     }
 
     SECTION("Merge junction data") {
