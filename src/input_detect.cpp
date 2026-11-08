@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <map>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -242,6 +243,36 @@ std::vector<std::string> resolve_input_files(const std::string& path, ListKind k
 
     // Otherwise a text file listing input paths.
     return read_path_list(path, kind);
+}
+
+void check_unique_sample_names(const std::vector<std::string>& files) {
+    std::map<std::string, std::string> seen;  // sample name -> first input
+    for (const auto& f : files) {
+        const std::string name = fs::path(f).stem().string();
+        auto [it, inserted] = seen.emplace(name, f);
+        if (!inserted) {
+            throw std::runtime_error(
+                "Two inputs have the same sample name '" + name + "': '" + it->second +
+                "' and '" + f + "'. EASTR names samples and output files after the "
+                "input filename, so rename one of them.");
+        }
+    }
+}
+
+void check_outputs_outside_input_dir(const std::string& input_dir,
+                                     const std::vector<std::string>& output_paths) {
+    for (const auto& out : output_paths) {
+        fs::path dir = fs::path(out).parent_path();
+        if (dir.empty()) dir = ".";
+        std::error_code ec;  // output directory may not exist yet: not equivalent
+        if (fs::equivalent(dir, input_dir, ec)) {
+            throw std::runtime_error(
+                "--out_filtered_bam would write into the --bam input directory '" +
+                input_dir + "'. Filtered BAMs there would be read as extra samples the "
+                "next time EASTR runs on that directory; choose a different output "
+                "directory.");
+        }
+    }
 }
 
 } // namespace eastr

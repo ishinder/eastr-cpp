@@ -317,6 +317,14 @@ int main(int argc, char* argv[]) {
                 fs::path p(bam_files[i]);
                 sample_names.push_back(p.stem().string());
             }
+            // Fail fast, before any alignment work, on inputs/outputs that collide.
+            eastr::check_unique_sample_names(bam_files);
+            if (!config.out_filtered_bam.empty() && fs::is_directory(config.bam_path)) {
+                eastr::check_outputs_outside_input_dir(
+                    config.bam_path,
+                    eastr::OutputWriter::generate_bam_output_paths(
+                        bam_files, config.out_filtered_bam, config.filtered_bam_suffix));
+            }
 
             if (config.verbose) {
                 std::cerr << "Extracting junctions from BAM files in parallel...\n";

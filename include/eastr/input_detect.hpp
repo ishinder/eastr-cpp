@@ -41,4 +41,15 @@ std::vector<std::string> read_path_list(const std::string& path, ListKind kind);
 // distinction is made by content (is_alignment_file / is_bed_file), not by name.
 std::vector<std::string> resolve_input_files(const std::string& path, ListKind kind);
 
+// Throws std::runtime_error if two inputs have the same sample name. EASTR
+// names samples (and per-sample output files) after the input filename stem,
+// so e.g. a/S1.bam and b/S1.cram would collide.
+void check_unique_sample_names(const std::vector<std::string>& files);
+
+// Throws std::runtime_error if any of `output_paths` would be written directly
+// into `input_dir` (the --bam directory): those files would be picked up as
+// extra input samples on the next run over that directory.
+void check_outputs_outside_input_dir(const std::string& input_dir,
+                                     const std::vector<std::string>& output_paths);
+
 } // namespace eastr

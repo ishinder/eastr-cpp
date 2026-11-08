@@ -229,3 +229,39 @@ TEST_CASE("resolve_input_files rejects unusable directories", "[input_detect]") 
     // --bed with a directory is not supported
     REQUIRE(contains(resolve_error(d.str(), ListKind::Bed), "is a directory. --bed takes"));
 }
+
+TEST_CASE("check_unique_sample_names rejects inputs with the same filename stem",
+          "[input_detect]") {
+    REQUIRE_NOTHROW(check_unique_sample_names({"a/S1.bam", "a/S2.bam", "b/S3.cram"}));
+    try {
+        check_unique_sample_names({"a/S1.bam", "a/S2.bam", "b/S1.cram"});
+        FAIL("expected an exception");
+    } catch (const std::runtime_error& e) {
+        std::string msg = e.what();
+        REQUIRE(contains(msg, "same sample name 'S1'"));
+        REQUIRE(contains(msg, "a/S1.bam"));
+        REQUIRE(contains(msg, "b/S1.cram"));
+    }
+}
+
+TEST_CASE("check_outputs_outside_input_dir rejects writing into the --bam directory",
+          "[input_detect]") {
+    TempDir in;
+    TempDir out;
+    const std::vector<std::string> into_input = {in.file("S1_EASTR_filtered.bam")};
+    const std::vector<std::string> elsewhere = {out.file("S1_EASTR_filtered.bam")};
+
+    REQUIRE_NOTHROW(check_outputs_outside_input_dir(in.str(), elsewhere));
+    // An output directory that does not exist yet cannot be the input directory.
+    REQUIRE_NOTHROW(check_outputs_outside_input_dir(
+        in.str(), {out.file("new_subdir/S1_EASTR_filtered.bam")}));
+
+    try {
+        check_outputs_outside_input_dir(in.str(), into_input);
+        FAIL("expected an exception");
+    } catch (const std::runtime_error& e) {
+        REQUIRE(contains(e.what(), "would write into the --bam input directory"));
+    }
+    // Same directory reached through a different spelling (trailing "/.").
+    REQUIRE_THROWS(check_outputs_outside_input_dir(in.str() + "/.", into_input));
+}
