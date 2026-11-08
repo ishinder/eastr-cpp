@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 
 #include "eastr/input_detect.hpp"
 #include "test_temp.hpp"
@@ -62,7 +63,7 @@ TEST_CASE("is_bed_file skips comment and track lines", "[input_detect]") {
 TEST_CASE("resolve_input_files auto-detects a BED path list", "[input_detect]") {
     TempFile bed("chr1\t100\t200\tj\t1\t+\n", ".dat");
     TempFile list(bed.str() + "\n", ".txt");
-    REQUIRE(resolve_input_files(list.str(), ListKind::Bed) ==
+    REQUIRE(resolve_input_files(list.str(), ListKind::Bed, false) ==
             std::vector<std::string>{bed.str()});
 }
 
@@ -79,7 +80,7 @@ TEST_CASE("is_bed_file treats a bgzipped file as a single BED", "[input_detect]"
 TEST_CASE("resolve_input_files returns a single alignment file as-is", "[input_detect]") {
     // Galaxy names datasets *.dat, so detection must use content.
     TempFile bam(kBamMagic, ".dat");
-    auto files = resolve_input_files(bam.str(), ListKind::Bam);
+    auto files = resolve_input_files(bam.str(), ListKind::Bam, false);
     REQUIRE(files == std::vector<std::string>{bam.str()});
 }
 
@@ -88,7 +89,7 @@ TEST_CASE("resolve_input_files auto-detects a BAM path list", "[input_detect]") 
     TempFile a(kBamMagic, ".dat");
     TempFile b(kBamMagic, ".dat");
     TempFile list(a.str() + "\n\n" + b.str() + "\n", ".txt");
-    auto files = resolve_input_files(list.str(), ListKind::Bam);
+    auto files = resolve_input_files(list.str(), ListKind::Bam, false);
     REQUIRE(files == std::vector<std::string>{a.str(), b.str()});
 }
 
@@ -96,7 +97,7 @@ namespace {
 // Message of the exception resolve_input_files throws for `path` (fails if none).
 std::string resolve_error(const std::string& path, ListKind kind = ListKind::Bam) {
     try {
-        resolve_input_files(path, kind);
+        resolve_input_files(path, kind, false);
     } catch (const std::runtime_error& e) {
         return e.what();
     }
@@ -215,7 +216,7 @@ TEST_CASE("resolve_input_files expands a --bam directory to its alignment files"
     fs::create_directories(d.file("sub"));
     write_alignment(d.file("sub/nested.bam"), "wb");            // not recursive: skipped
 
-    auto files = resolve_input_files(d.str(), ListKind::Bam);
+    auto files = resolve_input_files(d.str(), ListKind::Bam, false);
     REQUIRE(files == std::vector<std::string>{d.file("galaxy_dataset.dat"), d.file("s1.bam"),
                                               d.file("s2.bam"), d.file("s3.sam")});
 }
@@ -264,4 +265,23 @@ TEST_CASE("check_outputs_outside_input_dir rejects writing into the --bam direct
     }
     // Same directory reached through a different spelling (trailing "/.").
     REQUIRE_THROWS(check_outputs_outside_input_dir(in.str() + "/.", into_input));
+}
+
+TEST_CASE("resolve_input_files with force_list reads the argument as a list",
+          "[input_detect]") {
+    // --bam_list / --bed_list (kept for 2.1.x compatibility) skip detection.
+    TempFile bam(kBamMagic, ".dat");
+    TempFile list(bam.str() + "\n", ".txt");
+    REQUIRE(resolve_input_files(list.str(), ListKind::Bam, true) ==
+            std::vector<std::string>{bam.str()});
+}
+
+TEST_CASE("resolve_input_files rejects --bam_list on an alignment file or directory",
+          "[input_detect]") {
+    TempFile bam(kBamMagic, ".bam");
+    REQUIRE_THROWS_WITH(resolve_input_files(bam.str(), ListKind::Bam, true),
+                        Catch::Matchers::ContainsSubstring("Drop --bam_list"));
+    TempDir d;
+    REQUIRE_THROWS_WITH(resolve_input_files(d.str(), ListKind::Bam, true),
+                        Catch::Matchers::ContainsSubstring("Drop --bam_list"));
 }

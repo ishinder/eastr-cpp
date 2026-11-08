@@ -184,6 +184,15 @@ eastr --bam input.bam \
 | `-w INT` | 2 | Minimizer window size |
 | `-m INT` | 25 | Minimum chain score |
 
+### Input list options
+
+| Option | Description |
+|--------|-------------|
+| `--bam_list` | Optional: skip auto-detection and read the `--bam` argument as a list of alignment paths |
+| `--bed_list` | Optional: skip auto-detection and read the `--bed` argument as a list of BED paths |
+
+These flags are not needed for normal use; lists are detected automatically.
+
 ### Additional output options
 
 All `--out_*_junctions` options take a **file path** for a single input and write

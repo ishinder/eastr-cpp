@@ -223,7 +223,8 @@ std::vector<std::string> alignment_files_in_directory(const std::string& dir) {
     return files;
 }
 
-std::vector<std::string> resolve_input_files(const std::string& path, ListKind kind) {
+std::vector<std::string> resolve_input_files(const std::string& path, ListKind kind,
+                                             bool force_list) {
     if (!fs::exists(path)) {
         throw std::runtime_error("Input file not found: " + path);
     }
@@ -233,15 +234,27 @@ std::vector<std::string> resolve_input_files(const std::string& path, ListKind k
             throw std::runtime_error("'" + path + "' is a directory. --bed takes a BED "
                                      "file, or a text file listing one BED path per line.");
         }
+        if (force_list) {
+            throw std::runtime_error("'" + path + "' is a directory, not a list file. "
+                                     "Drop --bam_list to use the alignment files in it.");
+        }
         return alignment_files_in_directory(path);
     }
 
-    bool single = (kind == ListKind::Bam) ? is_alignment_file(path) : is_bed_file(path);
-    if (single) {
-        return {path};
+    if (!force_list) {
+        bool single = (kind == ListKind::Bam) ? is_alignment_file(path)
+                                              : is_bed_file(path);
+        if (single) {
+            return {path};
+        }
+    } else if (kind == ListKind::Bam && is_alignment_file(path)) {
+        // --bam_list on an actual BAM/CRAM/SAM: say so rather than misdiagnosing
+        // its binary content as a broken list or corrupt file.
+        throw std::runtime_error("'" + path + "' is an alignment file, not a list of "
+                                 "paths. Drop --bam_list to process it directly.");
     }
 
-    // Otherwise a text file listing input paths.
+    // A list of paths, either auto-detected or forced by --bam_list/--bed_list.
     return read_path_list(path, kind);
 }
 
