@@ -22,6 +22,16 @@ Pre-built Bowtie2 index for the reference genome (~170MB total):
 - `arabidopsis_ref.{1,2,3,4}.bt2`
 - `arabidopsis_ref.rev.{1,2}.bt2`
 
+### `chr4_subset_cram/` (generated, not tracked)
+CRAM copies of the three chr4 BAMs, for testing CRAM input end to end. Create them
+with `scripts/make_test_crams.sh` (needs `samtools`). They are encoded against a
+temporary copy of the reference that is then deleted, so, like a CRAM made on
+another machine, they can only be decoded with the reference passed to EASTR via
+`-r`. Use an uncompressed or bgzip-compressed copy of the reference, e.g.
+`gunzip -c test_data/reference/Arabidopsis_thaliana.TAIR10.dna.toplevel.fa.gz > ref.fa`,
+then `--bam test_data/chr4_subset_cram -r ref.fa`. The removed junctions should
+be identical to those from `--bam test_data/chr4_subset`.
+
 ### `bam_list.txt`
 A ready-to-use BAM list file with relative paths for testing EASTR.
 

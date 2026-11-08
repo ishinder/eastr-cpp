@@ -6,6 +6,7 @@ add_executable(eastr_tests
     test_strand_handling.cpp
     test_path_utils.cpp
     test_input_detect.cpp
+    test_alignment_io.cpp
 )
 
 target_link_libraries(eastr_tests PRIVATE
