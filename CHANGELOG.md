@@ -3,7 +3,7 @@
 All notable changes to this project are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
-## [2.1.2] - unreleased
+## [2.1.2] - 2026-11-08
 
 ### Added
 - `--bam` accepts a **directory**: every BAM/CRAM/SAM directly inside it is
