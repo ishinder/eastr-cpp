@@ -39,9 +39,6 @@ std::vector<std::string> read_path_list(const std::string& path, ListKind kind);
 // Resolve a --bam/--bed argument into its input files: a single file, the
 // paths listed in it, or (--bam only) the alignment files in a directory. The
 // distinction is made by content (is_alignment_file / is_bed_file), not by name.
-// `force_list` (--bam_list/--bed_list) skips detection and reads the argument as
-// a list.
-std::vector<std::string> resolve_input_files(const std::string& path, ListKind kind,
-                                             bool force_list);
+std::vector<std::string> resolve_input_files(const std::string& path, ListKind kind);
 
 } // namespace eastr

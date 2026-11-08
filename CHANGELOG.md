@@ -12,19 +12,23 @@ All notable changes to this project are documented here. This project adheres to
   skipped; hidden files and subdirectories are ignored. Previously a directory was
   silently read as an empty path list, producing no junctions and exiting 0.
 
+### Removed
+- **Breaking:** the `--bam_list` and `--bed_list` flags (added in 2.1.0). They were
+  on/off switches, not options taking a file, and list files are detected
+  automatically, so they had no practical effect. Commands that still pass them now
+  fail with `The following argument was not expected: --bam_list`; drop the flag
+  and keep `--bam list.txt` / `--bed list.txt`.
+
 ### Fixed
 - Passing a text file that lists BAM/BED paths to `--bam`/`--bed` no longer prints
   a deprecation warning. 2.1.0 told users to "pass --bam_list", which reads as
   `--bam_list FILE` and fails because `--bam_list` is a flag
   ([ishinder/eastr-cpp#4](https://github.com/ishinder/eastr-cpp/issues/4)). List files
-  are auto-detected by content, and that is now the supported behavior;
-  `--bam_list`/`--bed_list` remain as optional overrides.
+  are auto-detected by content, and that is the supported behavior.
 - CRAM input is now decoded against the `-r` reference. Previously the reference
   was never passed to htslib, so a CRAM whose header `UR:` path was not reachable
   (e.g. one created on another machine) failed to decode every slice and EASTR
   reported **zero junctions while exiting 0**.
-- `--bam_list` given an actual BAM/CRAM/SAM now says to drop the flag, instead of
-  misreading the binary file as a broken list.
 - Clearer errors when `--bam`/`--bed` is neither a recognized file nor a list of
   existing paths. Previously this printed `File not found: <first line>` (often an
   entire data record) or, for lines over the OS filename limit, a raw

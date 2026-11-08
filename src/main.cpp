@@ -199,10 +199,6 @@ int main(int argc, char* argv[]) {
         "Input BED file with intron coordinates, or a text file listing BED paths (auto-detected)");
     auto* bam_opt = app.add_option("--bam", config.bam_path,
         "Input BAM/CRAM/SAM file, a text file listing alignment paths, or a directory of alignment files (auto-detected)");
-    app.add_flag("--bed_list", config.bed_list,
-        "Optional: skip auto-detection and read the --bed argument as a list of BED paths");
-    app.add_flag("--bam_list", config.bam_list,
-        "Optional: skip auto-detection and read the --bam argument as a list of alignment paths");
 
     gtf_opt->excludes(bed_opt)->excludes(bam_opt);
     bed_opt->excludes(gtf_opt)->excludes(bam_opt);
@@ -314,7 +310,7 @@ int main(int argc, char* argv[]) {
 
         if (!config.bam_path.empty()) {
             is_bam_input = true;
-            bam_files = eastr::resolve_input_files(config.bam_path, eastr::ListKind::Bam, config.bam_list);
+            bam_files = eastr::resolve_input_files(config.bam_path, eastr::ListKind::Bam);
 
             // Get sample names (for consistent output ordering)
             for (size_t i = 0; i < bam_files.size(); ++i) {
@@ -375,7 +371,7 @@ int main(int argc, char* argv[]) {
             }
 
         } else if (!config.bed_path.empty()) {
-            bed_files = eastr::resolve_input_files(config.bed_path, eastr::ListKind::Bed, config.bed_list);
+            bed_files = eastr::resolve_input_files(config.bed_path, eastr::ListKind::Bed);
 
             if (config.verbose) {
                 std::cerr << "Parsing BED files...\n";

@@ -56,8 +56,6 @@ struct Config {
     std::string gtf_path;
     std::string bed_path;      // Single file or list file (detected by content)
     std::string bam_path;      // Single file or list file (detected by content)
-    bool bed_list = false;     // Treat --bed argument as a list of BED paths
-    bool bam_list = false;     // Treat --bam argument as a list of BAM paths
 
     // Required paths
     std::string reference_fasta;
